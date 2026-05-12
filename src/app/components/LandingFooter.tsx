@@ -59,9 +59,9 @@ export default function LandingFooter() {
 
           {Object.entries(footerLinks)?.map(([category, links]) => (
             <div key={`footer-cat-${category}`}>
-              <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">
                 {category}
-              </h4>
+              </h3>
               <ul className="flex flex-col gap-2.5">
                 {links?.map((link) => (
                   <li key={`footer-link-${link?.label}`}>
@@ -80,7 +80,7 @@ export default function LandingFooter() {
 
         <div className="mt-12 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">
-            © 2026 DmGo Inc. All rights reserved.
+            (c) 2026 DmGo Inc. All rights reserved.
           </p>
           <p className="text-xs text-muted-foreground">
             Not affiliated with Meta or Instagram.
@@ -90,3 +90,4 @@ export default function LandingFooter() {
     </footer>
   );
 }
+
