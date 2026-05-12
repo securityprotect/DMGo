@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
+import Script from 'next/script';
 import '../styles/tailwind.css';
 import { Toaster } from 'sonner';
 import RouteTransitionLoader from '@/components/ui/RouteTransitionLoader';
@@ -18,9 +19,47 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'DmGo — Instagram DM Automation for Creators',
+  metadataBase: new URL('https://www.dmgo.in'),
+  title: 'DmGo - Instagram DM Automation for Creators',
   description:
-    'DmGo automates keyword-triggered Instagram DMs on reels and posts — set it up in minutes, grow your audience on autopilot.',
+    'DmGo automates keyword-triggered Instagram DMs on reels and posts - set it up in minutes, grow your audience on autopilot.',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'DmGo - Instagram DM Automation for Creators',
+    description:
+      'DmGo automates keyword-triggered Instagram DMs on reels and posts - set it up in minutes, grow your audience on autopilot.',
+    url: 'https://www.dmgo.in',
+    siteName: 'DmGo',
+    type: 'website',
+    images: [
+      {
+        url: '/assets/images/app_logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'DmGo',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'DmGo - Instagram DM Automation for Creators',
+    description:
+      'DmGo automates keyword-triggered Instagram DMs on reels and posts - set it up in minutes, grow your audience on autopilot.',
+    images: ['/assets/images/app_logo.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
+  },
   icons: {
     icon: [{ url: '/favicon.ico', type: 'image/x-icon' }],
   },
@@ -48,8 +87,19 @@ export default function RootLayout({
           }}
         />
 
-        <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Fdmgo1509back.builtwithrocket.new&_be=https%3A%2F%2Fappanalytics.rocket.new&_v=0.1.18" />
-        <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2" /></body>
+        <Script
+          id="rocket-web"
+          type="module"
+          strategy="lazyOnload"
+          src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Fdmgo1509back.builtwithrocket.new&_be=https%3A%2F%2Fappanalytics.rocket.new&_v=0.1.18"
+        />
+        <Script
+          id="rocket-shot"
+          type="module"
+          strategy="lazyOnload"
+          src="https://static.rocket.new/rocket-shot.js?v=0.0.2"
+        />
+      </body>
     </html>
   );
 }
