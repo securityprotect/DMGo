@@ -5,22 +5,54 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import { Check, Zap } from 'lucide-react';
 
+declare global {
+  interface Window {
+    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
+  }
+}
+
 const plans = [
   { id: 'plan-starter', name: 'Starter', monthlyPrice: 0, annualPrice: 0, description: 'Perfect for creators just getting started with DM automation.', badge: null, features: ['1 Instagram account','3 active automations','500 DMs / month'], cta: 'Get Started Free', ctaVariant: 'outline' as const },
-  { id: 'plan-growth', name: 'Growth', monthlyPrice: 29, annualPrice: 23, description: 'For creators and marketers scaling their DM strategy.', badge: 'Most Popular', features: ['3 Instagram accounts','Unlimited automations','10,000 DMs / month'], cta: 'Pay with PhonePe', ctaVariant: 'primary' as const },
-  { id: 'plan-agency', name: 'Agency', monthlyPrice: 99, annualPrice: 79, description: 'For agencies managing multiple creators and brands.', badge: null, features: ['20 Instagram accounts','Unlimited automations','100,000 DMs / month'], cta: 'Pay with PhonePe', ctaVariant: 'outline' as const },
+  { id: 'plan-growth', name: 'Growth', monthlyPrice: 29, annualPrice: 23, description: 'For creators and marketers scaling their DM strategy.', badge: 'Most Popular', features: ['3 Instagram accounts','Unlimited automations','10,000 DMs / month'], cta: 'Pay with Razorpay', ctaVariant: 'primary' as const },
+  { id: 'plan-agency', name: 'Agency', monthlyPrice: 99, annualPrice: 79, description: 'For agencies managing multiple creators and brands.', badge: null, features: ['20 Instagram accounts','Unlimited automations','100,000 DMs / month'], cta: 'Pay with Razorpay', ctaVariant: 'outline' as const },
 ];
 
 export default function PricingSection() {
   const [annual, setAnnual] = useState(false);
 
-  const startPhonePeCheckout = async (planId: string, amount: number) => {
-    const res = await fetch('/api/billing/phonepe/subscribe', {
+  const loadRazorpayScript = async () => {
+    if (window.Razorpay) return true;
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    document.body.appendChild(script);
+    return new Promise<boolean>((resolve) => {
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+    });
+  };
+
+  const startRazorpayCheckout = async (planId: string, amount: number) => {
+    const sdkLoaded = await loadRazorpayScript();
+    if (!sdkLoaded) return;
+
+    const res = await fetch('/api/billing/razorpay/subscribe', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ planId, amount }),
     });
     const data = await res.json();
-    if (!res.ok || !data.checkoutUrl) return;
-    window.location.href = data.checkoutUrl;
+    if (!res.ok || !data.orderId || !window.Razorpay) return;
+
+    const razorpay = new window.Razorpay({
+      key: data.keyId,
+      amount: data.amount,
+      currency: data.currency,
+      name: data.name,
+      description: data.description,
+      order_id: data.orderId,
+      notes: { planId },
+      theme: { color: '#0F766E' },
+    });
+    razorpay.open();
   };
 
   return <section id="pricing" className="py-24 gradient-bg-pearl"><div className="max-w-screen-xl mx-auto px-6"><div className="text-center mb-12"><h2 className="text-hero-md font-extrabold text-foreground mb-4">Simple, transparent pricing</h2>
@@ -31,6 +63,6 @@ export default function PricingSection() {
         <h3 className="text-lg font-bold text-foreground mb-1">{plan.name}</h3><p className="text-sm text-muted-foreground">{plan.description}</p>
         <div className="flex items-end gap-1.5 my-6"><span className="text-4xl font-extrabold text-foreground tabular-nums">${price}</span><span className="text-sm text-muted-foreground mb-1.5">/mo</span></div>
         <ul className="flex flex-col gap-2.5 mb-7 flex-1">{plan.features.map((feat) => <li key={feat} className="flex items-start gap-2.5 text-sm text-foreground"><Check size={15} className="text-success shrink-0 mt-0.5" />{feat}</li>)}</ul>
-        {price === 0 ? <Link href="/sign-up-login-screen"><Button variant={isFeatured ? 'primary' : plan.ctaVariant} fullWidth size="md">{plan.cta}</Button></Link> : <Button variant={isFeatured ? 'primary' : plan.ctaVariant} fullWidth size="md" onClick={() => void startPhonePeCheckout(plan.id, price)}>{plan.cta}</Button>}
+        {price === 0 ? <Link href="/sign-up-login-screen"><Button variant={isFeatured ? 'primary' : plan.ctaVariant} fullWidth size="md">{plan.cta}</Button></Link> : <Button variant={isFeatured ? 'primary' : plan.ctaVariant} fullWidth size="md" onClick={() => void startRazorpayCheckout(plan.id, price)}>{plan.cta}</Button>}
       </div>; })}</div></div></section>;
 }
