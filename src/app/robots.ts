@@ -8,6 +8,6 @@ export default function robots(): MetadataRoute.Robots {
       disallow: ['/dashboard', '/api'],
     },
     sitemap: 'https://www.dmgo.in/sitemap.xml',
-    host: 'https://www.dmgo.in',
+    host: 'www.dmgo.in',
   };
 }
