@@ -1,6 +1,5 @@
 'use client';
-import React, { useState } from 'react';
-import { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { toast } from 'sonner';
 import Badge from '@/components/ui/Badge';
@@ -59,22 +58,89 @@ const notifications = [
 export default function DashboardTopbar({ onMobileMenuOpen }: TopbarProps) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [userName, setUserName] = useState('User');
-  const [userEmail, setUserEmail] = useState('user@dmgo.app');
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
   const [userPlan, setUserPlan] = useState('starter plan');
+  const normalizedName = (userName || '').trim().toLowerCase();
+  const isGenericName = !normalizedName || normalizedName === 'user';
+  const hasRealEmail = !!userEmail && userEmail.toLowerCase() !== 'user@dmgo.app';
+  const displayName = !isGenericName ? userName : (hasRealEmail ? userEmail : 'My Account');
+  const displayInitial = (displayName?.trim()?.[0] || 'A').toUpperCase();
 
   const unreadCount = notifications.filter((n) => n.unread).length;
+  const topbarMenuRef = useRef<HTMLDivElement | null>(null);
+  const isGenericIdentity = (value?: string) => {
+    const v = String(value || '').trim().toLowerCase();
+    return !v || v === 'user' || v === 'admin' || v === 'test' || v === 'guest';
+  };
+  const isGenericEmail = (value?: string) => {
+    const local = String(value || '').split('@')[0]?.trim().toLowerCase() || '';
+    return !local || isGenericIdentity(local);
+  };
 
   useEffect(() => {
+    const profileCookieRaw = document.cookie.match(/(?:^|;\s*)dmgo_profile=([^;]+)/)?.[1];
+    if (profileCookieRaw) {
+      try {
+        const profileCookie = decodeURIComponent(profileCookieRaw);
+        const b64 = profileCookie.replace(/-/g, '+').replace(/_/g, '/');
+        const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+        const text = atob(padded);
+        const data = JSON.parse(text) as { name?: string; email?: string; plan?: string };
+        if (data?.name && !isGenericIdentity(data.name)) setUserName(data.name);
+        if (data?.email && !isGenericEmail(data.email)) setUserEmail(data.email);
+        if (data?.plan) setUserPlan(`${data.plan} plan`);
+      } catch {
+        // ignore malformed profile cookie
+      }
+    }
+
     const loadMe = async () => {
-      const res = await fetch('/api/auth/me');
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.user?.name) setUserName(data.user.name);
-      if (data.user?.email) setUserEmail(data.user.email);
-      if (data.user?.plan) setUserPlan(`${data.user.plan} plan`);
+      try {
+        const res = await Promise.race([
+          fetch('/api/auth/me', { cache: 'no-store', credentials: 'same-origin' }),
+          new Promise<Response>((_, reject) => setTimeout(() => reject(new Error('me_fetch_timeout')), 8000)),
+        ]);
+        if (res.status === 401) {
+          window.location.href = '/sign-up-login-screen';
+          return;
+        }
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.user?.name && !isGenericIdentity(data.user.name)) setUserName(data.user.name);
+        if (data.user?.email && !isGenericEmail(data.user.email)) setUserEmail(data.user.email);
+        if (data.user?.plan) setUserPlan(`${data.user.plan} plan`);
+      } catch {
+        // Retry once after brief delay in flaky proxy/network paths.
+        setTimeout(async () => {
+          try {
+            const retry = await fetch('/api/auth/me', { cache: 'no-store', credentials: 'same-origin' });
+            if (!retry.ok) return;
+            const data = await retry.json();
+            if (data.user?.name) setUserName(data.user.name);
+            if (data.user?.email) setUserEmail(data.user.email);
+            if (data.user?.plan) setUserPlan(`${data.user.plan} plan`);
+          } catch {
+            // Keep defaults.
+          }
+        }, 1200);
+      }
     };
     void loadMe();
+  }, []);
+
+  useEffect(() => {
+    const handleDocumentClick = (event: MouseEvent) => {
+      if (!topbarMenuRef.current) return;
+      if (topbarMenuRef.current.contains(event.target as Node)) return;
+      setNotifOpen(false);
+      setUserMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', handleDocumentClick);
+    return () => {
+      document.removeEventListener('mousedown', handleDocumentClick);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -89,7 +155,10 @@ export default function DashboardTopbar({ onMobileMenuOpen }: TopbarProps) {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-border flex items-center justify-between gap-4 px-4 xl:px-6 shrink-0 sticky top-0 z-20">
+    <header
+      ref={topbarMenuRef}
+      className="h-16 bg-white border-b border-border flex items-center justify-between gap-4 px-4 xl:px-6 shrink-0 sticky top-0 z-50 pointer-events-auto"
+    >
       <div className="flex items-center gap-3">
         <button
           className="btn-ghost p-2 lg:hidden"
@@ -112,7 +181,7 @@ export default function DashboardTopbar({ onMobileMenuOpen }: TopbarProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 relative z-[60]">
         <div className="relative">
           <button
             className="btn-ghost p-2 relative"
@@ -185,11 +254,11 @@ export default function DashboardTopbar({ onMobileMenuOpen }: TopbarProps) {
             aria-haspopup="true"
           >
             <div className="w-7 h-7 rounded-full gradient-primary flex items-center justify-center text-white text-xs font-bold shrink-0">
-              M
+              {displayInitial}
             </div>
             <div className="hidden sm:block text-left">
               <p className="text-xs font-bold text-foreground leading-tight">
-                {userName}
+                {displayName}
               </p>
               <p className="text-xs text-muted-foreground leading-tight">
                 {userPlan}
@@ -206,7 +275,7 @@ export default function DashboardTopbar({ onMobileMenuOpen }: TopbarProps) {
           {userMenuOpen && (
             <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-border rounded-2xl shadow-card-xl animate-slide-down z-50">
               <div className="px-4 py-3 border-b border-border">
-                <p className="text-sm font-bold text-foreground">{userName}</p>
+                <p className="text-sm font-bold text-foreground">{displayName}</p>
                 <p className="text-xs text-muted-foreground">
                   {userEmail}
                 </p>

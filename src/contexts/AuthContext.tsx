@@ -11,15 +11,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const refresh = async () => {
-    const res = await fetch('/api/auth/me');
-    if (!res.ok) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    try {
+      const res = await fetch('/api/auth/me', {
+        signal: controller.signal,
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      if (!res.ok) {
+        setUser(null);
+        return;
+      }
+      const data = await res.json();
+      setUser(data.user);
+    } catch {
       setUser(null);
+    } finally {
+      clearTimeout(timeout);
       setLoading(false);
-      return;
     }
-    const data = await res.json();
-    setUser(data.user);
-    setLoading(false);
   };
 
   useEffect(() => {

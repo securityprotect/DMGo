@@ -1,5 +1,9 @@
 import jwt from 'jsonwebtoken';
 
+function env(name: string, fallback = '') {
+  return (process.env[name] || fallback).trim();
+}
+
 export function buildInstagramState(userId: string) {
   const secret = process.env.JWT_SECRET;
   if (!secret) throw new Error('JWT_SECRET missing');
@@ -13,10 +17,13 @@ export function parseInstagramState(state: string): { userId: string } {
 }
 
 export function getInstagramOAuthUrl(state: string) {
-  const scopes = process.env.INSTAGRAM_OAUTH_SCOPES || 'instagram_business_basic,instagram_business_manage_comments,instagram_business_manage_messages';
+  const scopes = env(
+    'INSTAGRAM_OAUTH_SCOPES',
+    'instagram_business_basic,instagram_business_manage_comments,instagram_business_manage_messages'
+  );
   const params = new URLSearchParams({
-    client_id: process.env.INSTAGRAM_APP_ID || '',
-    redirect_uri: process.env.META_REDIRECT_URI || '',
+    client_id: env('INSTAGRAM_APP_ID'),
+    redirect_uri: env('META_REDIRECT_URI'),
     scope: scopes,
     response_type: 'code',
     state,
@@ -26,10 +33,10 @@ export function getInstagramOAuthUrl(state: string) {
 
 export async function exchangeCodeForToken(code: string) {
   const body = new URLSearchParams({
-    client_id: process.env.INSTAGRAM_APP_ID || '',
-    client_secret: process.env.INSTAGRAM_APP_SECRET || '',
+    client_id: env('INSTAGRAM_APP_ID'),
+    client_secret: env('INSTAGRAM_APP_SECRET'),
     grant_type: 'authorization_code',
-    redirect_uri: process.env.META_REDIRECT_URI || '',
+    redirect_uri: env('META_REDIRECT_URI'),
     code,
   });
 

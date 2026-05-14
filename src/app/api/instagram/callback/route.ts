@@ -10,12 +10,13 @@ import {
 import { setAuthCookie, signAuthToken } from '@/lib/auth/session';
 
 export async function GET(req: Request) {
+  const webUrl = (process.env.WEB_URL || 'http://localhost:4028').trim();
   const { searchParams } = new URL(req.url);
   const code = searchParams.get('code');
   const state = searchParams.get('state');
 
   if (!code || !state) {
-    return NextResponse.redirect(`${process.env.WEB_URL || 'http://localhost:4028'}/dashboard?connected=0`);
+    return NextResponse.redirect(`${webUrl}/dashboard?connected=0`);
   }
 
   try {
@@ -50,12 +51,12 @@ export async function GET(req: Request) {
       console.log('[IG_CONNECT] webhook subscribe failed for igUserId=', String(profile.id), 'reason=', msg);
     }
 
-    const res = NextResponse.redirect(`${process.env.WEB_URL || 'http://localhost:4028'}/dashboard?connected=1`);
+    const res = NextResponse.redirect(`${webUrl}/dashboard?connected=1`);
     const token = signAuthToken(userId);
     res.cookies.set(setAuthCookie(token));
     return res;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Instagram connect failed';
-    return NextResponse.redirect(`${process.env.WEB_URL || 'http://localhost:4028'}/dashboard?connected=0&error=${encodeURIComponent(message)}`);
+    return NextResponse.redirect(`${webUrl}/dashboard?connected=0&error=${encodeURIComponent(message)}`);
   }
 }

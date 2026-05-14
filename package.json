@@ -55,6 +55,7 @@
     "@tailwindcss/typography": "^0.5.16",
     "bcryptjs": "^2.4.3",
     "framer-motion": "latest",
+    "gpg": "^0.6.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^1.7.0",
     "mongoose": "^8.14.1",

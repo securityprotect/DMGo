@@ -6,8 +6,13 @@ const userSchema = new Schema(
     email: { type: String, required: true, unique: true, lowercase: true },
     passwordHash: { type: String, required: true },
     plan: { type: String, default: 'starter' },
+    role: { type: String, enum: ['creator', 'agency', 'admin'], default: 'creator', index: true },
+    status: { type: String, enum: ['active', 'suspended', 'deleted'], default: 'active', index: true },
     resetPasswordTokenHash: { type: String, default: '' },
     resetPasswordExpiresAt: { type: Date, default: null },
+    lastLoginAt: { type: Date, default: null },
+    lastLoginIp: { type: String, default: '' },
+    loginFailures24h: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

@@ -6,18 +6,44 @@ import DashboardTabs from './DashboardTabs';
 
 export default function DashboardContent() {
   const [instagramConnected, setInstagramConnected] = useState(false);
-  const [checkingConnection, setCheckingConnection] = useState(true);
+  const [checkingConnection, setCheckingConnection] = useState(false);
 
   useEffect(() => {
+    let active = true;
+    const hardStop = setTimeout(() => {
+      if (active) setCheckingConnection(false);
+    }, 2500);
     const load = async () => {
-      const res = await fetch('/api/instagram/accounts');
-      if (res.ok) {
-        const data = await res.json();
-        setInstagramConnected((data.accounts || []).length > 0);
+      if (active) setCheckingConnection(true);
+      try {
+        const res = await Promise.race([
+          fetch('/api/instagram/accounts', {
+            cache: 'no-store',
+            credentials: 'same-origin',
+          }),
+          new Promise<Response>((_, reject) => setTimeout(() => reject(new Error('accounts_fetch_timeout')), 8000)),
+        ]);
+        if (res.ok) {
+          const data = await res.json();
+          if (active) {
+            setInstagramConnected((data.accounts || []).length > 0);
+          }
+        }
+      } catch {
+        if (active) {
+          setInstagramConnected(false);
+        }
+      } finally {
+        if (active) {
+          setCheckingConnection(false);
+        }
       }
-      setCheckingConnection(false);
     };
     void load();
+    return () => {
+      active = false;
+      clearTimeout(hardStop);
+    };
   }, []);
 
   if (checkingConnection) {

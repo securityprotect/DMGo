@@ -8,10 +8,11 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  showPasswordToggle?: boolean;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, helperText, error, leftIcon, rightIcon, type, className = '', id, ...props }, ref) => {
+  ({ label, helperText, error, leftIcon, rightIcon, type, showPasswordToggle = true, className = '', id, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
     const isPassword = type === 'password';
     const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
@@ -47,14 +48,15 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             aria-invalid={!!error}
             {...props}
           />
-          {isPassword && (
+          {isPassword && showPasswordToggle && (
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute right-2.5 top-1/2 z-10 -translate-y-1/2 p-2 text-muted-foreground hover:text-foreground transition-colors pointer-events-auto"
               aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           )}
           {!isPassword && rightIcon && (
